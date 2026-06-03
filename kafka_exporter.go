@@ -966,7 +966,11 @@ func (e *Exporter) emitGroupMetrics(
 			ch <- prometheus.MustNewConstMetric(
 				consumergroupCurrentOffset, prometheus.GaugeValue, float64(currentOffset), group.GroupId, topic, strconv.FormatInt(int64(partition), 10),
 			)
-			currentPartitionOffset, currentPartitionOffsetError := e.client.GetOffset(topic, partition, sarama.OffsetNewest)
+			currentPartitionOffset, ok := offsetMap[topic][partition]
+			var currentPartitionOffsetError error
+			if !ok {
+				currentPartitionOffset, currentPartitionOffsetError = e.client.GetOffset(topic, partition, sarama.OffsetNewest)
+			}
 			if currentPartitionOffsetError != nil {
 				klog.Errorf("Cannot get current offset of topic %s partition %d: %v", topic, partition, currentPartitionOffsetError)
 			} else {
@@ -974,10 +978,8 @@ func (e *Exporter) emitGroupMetrics(
 				if offsetFetchResponseBlock.Offset == -1 {
 					lag = -1
 				} else {
-					// writes to the offset map are only performed in getTopicMetrics(), which is guaranteed to be done before this point
-					// no mutex required for concurrent reads
-					if offset, ok := offsetMap[topic][partition]; ok {
-						if currentPartitionOffset == -1 {
+					if currentPartitionOffset == -1 {
+						if offset, mapOk := offsetMap[topic][partition]; mapOk {
 							currentPartitionOffset = offset
 						}
 					}
