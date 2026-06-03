@@ -207,6 +207,7 @@ Describe all topics.
 | `kafka_topic_partition_leader_is_preferred`        | 1 if Topic/Partition is using the Preferred Broker  |
 | `kafka_topic_partition_replicas`                   | Number of Replicas for this Topic/Partition         |
 | `kafka_topic_partition_under_replicated_partition` | 1 if Topic/Partition is under Replicated            |
+| `kafka_topic_partition_consumer`                   | Active consumer on topic partition (1 if assigned, 0 if the group consumes but has no active member on the partition) |
 
 **Metrics output example**
 
@@ -242,6 +243,21 @@ kafka_topic_partition_replicas{partition="0",topic="__consumer_offsets"} 3
 # HELP kafka_topic_partition_under_replicated_partition 1 if Topic/Partition is under Replicated
 # TYPE kafka_topic_partition_under_replicated_partition gauge
 kafka_topic_partition_under_replicated_partition{partition="0",topic="__consumer_offsets"} 0
+
+# HELP kafka_topic_partition_consumer Active consumer on topic partition (1 if assigned, 0 if group consumes but no active member)
+# TYPE kafka_topic_partition_consumer gauge
+kafka_topic_partition_consumer{client_id="my-client",consumergroup="my-group",consumer_id="my-client-abc",host="10.0.0.1",partition="3",topic="my-topic"} 1
+kafka_topic_partition_consumer{client_id="-",consumergroup="my-group",consumer_id="-",host="-",partition="0",topic="my-topic"} 0
+```
+
+Labels for `kafka_topic_partition_consumer`: `topic`, `partition`, `consumergroup`, `consumer_id`, `host`, `client_id`. Value **0** uses `"-"` for consumer labels when the group has a committed offset on the partition but no active member (same as `kafka-consumer-groups.sh --describe` with no active members). Requires **Describe** consumer groups. On large clusters, tighten `topic.filter` and `group.filter` to limit time series cardinality.
+
+Example PromQL:
+
+```promql
+kafka_topic_partition_consumer{topic="my-topic", consumer_id!="-"} == 1
+kafka_topic_partition_consumer{consumergroup="my-group", consumer_id="-"} == 0
+count(kafka_topic_partition_consumer{topic="my-topic", consumer_id!="-"} == 1) by (topic)
 ```
 
 ### Consumer Groups
