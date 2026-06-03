@@ -918,14 +918,12 @@ func (e *Exporter) emitGroupMetrics(
 	ch <- prometheus.MustNewConstMetric(
 		consumergroupMembers, prometheus.GaugeValue, float64(len(group.Members)), group.GroupId,
 	)
-	// make a copy of the broker since each broker object does not support concurrent requests
-	brokerCopy := sarama.NewBroker(broker.Addr())
-	if err := brokerCopy.Open(e.client.Config()); err != nil {
-		klog.Errorf("Cannot connect to broker %s: %v", brokerCopy.Addr(), err)
+	coordinator, err := e.client.Coordinator(group.GroupId)
+	if err != nil {
+		klog.Errorf("Cannot get coordinator of group %s: %v", group.GroupId, err)
 		return
 	}
-	defer brokerCopy.Close()
-	offsetFetchResponse, err := brokerCopy.FetchOffset(&offsetFetchRequest)
+	offsetFetchResponse, err := coordinator.FetchOffset(&offsetFetchRequest)
 	if err != nil {
 		klog.Errorf("Cannot get offset of group %s: %v", group.GroupId, err)
 		return
