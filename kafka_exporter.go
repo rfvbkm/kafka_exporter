@@ -34,8 +34,9 @@ import (
 )
 
 const (
-	namespace = "kafka"
-	clientID  = "kafka_exporter"
+	namespace             = "kafka"
+	clientID              = "kafka_exporter"
+	inactiveConsumerLabel = "-"
 )
 
 const (
@@ -55,6 +56,7 @@ var (
 	topicPartitionInSyncReplicas       *prometheus.Desc
 	topicPartitionUsesPreferredReplica *prometheus.Desc
 	topicUnderReplicatedPartition      *prometheus.Desc
+	topicPartitionConsumer             *prometheus.Desc
 	consumergroupCurrentOffset         *prometheus.Desc
 	consumergroupCurrentOffsetSum      *prometheus.Desc
 	consumergroupLag                   *prometheus.Desc
@@ -400,6 +402,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	ch <- topicPartitionInSyncReplicas
 	ch <- topicPartitionUsesPreferredReplica
 	ch <- topicUnderReplicatedPartition
+	ch <- topicPartitionConsumer
 	ch <- consumergroupCurrentOffset
 	ch <- consumergroupCurrentOffsetSum
 	ch <- consumergroupLag
@@ -650,6 +653,9 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) {
 	// Even though we do another release below, this is fine (double release is a no-op).
 	defer pool.Release()
 
+	seenConsumerMetrics := make(map[consumerMetricKey]struct{})
+	var consumerMetricsMu sync.Mutex
+
 	// broker should be opened before calling this function
 	getConsumerGroupMetrics := func(broker *sarama.Broker) {
 		defer wg.Done()
@@ -678,7 +684,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) {
 			}
 
 			err := pool.Submit(func() {
-				e.emitGroupMetrics(group, broker, offset, ch)
+				e.emitGroupMetrics(group, broker, offset, ch, seenConsumerMetrics, &consumerMetricsMu)
 			})
 			if err != nil {
 				klog.Errorf("Cannot submit task to pool: %v", err)
@@ -720,7 +726,90 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (e *Exporter) emitGroupMetrics(group *sarama.GroupDescription, broker *sarama.Broker, offsetMap map[string]map[int32]int64, ch chan<- prometheus.Metric) {
+type consumerMetricKey struct {
+	consumergroup string
+	topic         string
+	partition     string
+	consumerID    string
+}
+
+func normalizeConsumerHost(host string) string {
+	return strings.TrimPrefix(host, "/")
+}
+
+func (e *Exporter) tryEmitTopicPartitionConsumer(
+	ch chan<- prometheus.Metric,
+	seen map[consumerMetricKey]struct{},
+	mu *sync.Mutex,
+	topic, partition, consumergroup, consumerID, host, clientID string,
+	value float64,
+) {
+	if !e.topicFilter.MatchString(topic) || e.topicExclude.MatchString(topic) {
+		return
+	}
+	key := consumerMetricKey{
+		consumergroup: consumergroup,
+		topic:         topic,
+		partition:     partition,
+		consumerID:    consumerID,
+	}
+	mu.Lock()
+	if _, dup := seen[key]; dup {
+		mu.Unlock()
+		return
+	}
+	seen[key] = struct{}{}
+	mu.Unlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		topicPartitionConsumer, prometheus.GaugeValue, value,
+		topic, partition, consumergroup, consumerID, host, clientID,
+	)
+}
+
+func (e *Exporter) emitGroupMetrics(
+	group *sarama.GroupDescription,
+	broker *sarama.Broker,
+	offsetMap map[string]map[int32]int64,
+	ch chan<- prometheus.Metric,
+	seenConsumerMetrics map[consumerMetricKey]struct{},
+	consumerMetricsMu *sync.Mutex,
+) {
+	coveredPartitions := make(map[string]map[int32]bool)
+	markCovered := func(topic string, partition int32) {
+		if coveredPartitions[topic] == nil {
+			coveredPartitions[topic] = make(map[int32]bool)
+		}
+		coveredPartitions[topic][partition] = true
+	}
+	isCovered := func(topic string, partition int32) bool {
+		return coveredPartitions[topic][partition]
+	}
+
+	if group.State == "Stable" && len(group.Members) > 0 {
+		for _, member := range group.Members {
+			if len(member.MemberAssignment) == 0 {
+				continue
+			}
+			assignment, err := member.GetMemberAssignment()
+			if err != nil {
+				klog.Errorf("Cannot get GetMemberAssignment of group member %v : %v", member, err)
+				continue
+			}
+			for topic, partitions := range assignment.Topics {
+				for _, partition := range partitions {
+					markCovered(topic, partition)
+					e.tryEmitTopicPartitionConsumer(
+						ch, seenConsumerMetrics, consumerMetricsMu,
+						topic, strconv.FormatInt(int64(partition), 10), group.GroupId,
+						member.MemberId, normalizeConsumerHost(member.ClientHost), member.ClientId,
+						1,
+					)
+				}
+			}
+		}
+	}
+
 	offsetFetchRequest := sarama.OffsetFetchRequest{ConsumerGroup: group.GroupId, Version: e.fetchOffsetVersion()}
 	if e.offsetShowAll {
 		for topic, partitions := range offsetMap {
@@ -785,6 +874,14 @@ func (e *Exporter) emitGroupMetrics(group *sarama.GroupDescription, broker *sara
 				continue
 			}
 			currentOffset := offsetFetchResponseBlock.Offset
+			if currentOffset != -1 && !isCovered(topic, partition) {
+				e.tryEmitTopicPartitionConsumer(
+					ch, seenConsumerMetrics, consumerMetricsMu,
+					topic, strconv.FormatInt(int64(partition), 10), group.GroupId,
+					inactiveConsumerLabel, inactiveConsumerLabel, inactiveConsumerLabel,
+					0,
+				)
+			}
 			currentOffsetSum += currentOffset
 			ch <- prometheus.MustNewConstMetric(
 				consumergroupCurrentOffset, prometheus.GaugeValue, float64(currentOffset), group.GroupId, topic, strconv.FormatInt(int64(partition), 10),
@@ -1014,6 +1111,12 @@ func setup(
 		prometheus.BuildFQName(namespace, "topic", "partition_under_replicated_partition"),
 		"1 if Topic/Partition is under Replicated",
 		[]string{"topic", "partition"}, labels,
+	)
+
+	topicPartitionConsumer = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "topic", "partition_consumer"),
+		"Active consumer on topic partition (1 if assigned, 0 if group consumes but no active member)",
+		[]string{"topic", "partition", "consumergroup", "consumer_id", "host", "client_id"}, labels,
 	)
 
 	consumergroupCurrentOffset = prometheus.NewDesc(
