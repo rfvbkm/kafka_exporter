@@ -764,7 +764,7 @@ func (e *Exporter) collect(ch chan<- prometheus.Metric) {
 			}
 
 			err := pool.Submit(func() {
-				e.emitGroupMetrics(group, broker, offset, ch, seenConsumerMetrics, &consumerMetricsMu)
+				e.emitGroupMetrics(group, offset, ch, seenConsumerMetrics, &consumerMetricsMu)
 			})
 			if err != nil {
 				klog.Errorf("Cannot submit task to pool: %v", err)
@@ -849,7 +849,6 @@ func (e *Exporter) tryEmitTopicPartitionConsumer(
 
 func (e *Exporter) emitGroupMetrics(
 	group *sarama.GroupDescription,
-	broker *sarama.Broker,
 	offsetMap map[string]map[int32]int64,
 	ch chan<- prometheus.Metric,
 	seenConsumerMetrics map[consumerMetricKey]struct{},

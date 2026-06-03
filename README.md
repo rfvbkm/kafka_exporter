@@ -1,9 +1,7 @@
-![kafka_exporter](https://socialify.git.ci/danielqsj/kafka_exporter/image?description=1&font=Inter&forks=1&pattern=Signal&stargazers=1&theme=Light)
-
 kafka_exporter
 ==============
 
-[![CI](https://github.com/danielqsj/kafka_exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/danielqsj/kafka_exporter/actions/workflows/ci.yml)[![Docker Pulls](https://img.shields.io/docker/pulls/danielqsj/kafka-exporter.svg)](https://hub.docker.com/r/danielqsj/kafka-exporter)[![Go Report Card](https://goreportcard.com/badge/github.com/danielqsj/kafka_exporter)](https://goreportcard.com/report/github.com/danielqsj/kafka_exporter)[![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/danielqsj/kafka-exporter)[![GitHub release](https://img.shields.io/badge/release-1.9.0-green.svg)](https://github.com/danielqsj/kafka-exporter/releases)[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![CI](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/rfvbkm/kafka_exporter)](https://goreportcard.com/report/github.com/rfvbkm/kafka_exporter) [![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/rfvbkm/kafka_exporter) [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 Kafka exporter for Prometheus. For other metrics from Kafka, have a look at the [JMX exporter](https://github.com/prometheus/jmx_exporter).
 
@@ -28,7 +26,6 @@ Table of Contents
   - [Consumer Groups](#consumer-groups)
 - [Grafana Dashboard](#grafana-dashboard)
 - [Contribute](#contribute)
-- [Donation](#donation)
 - [License](#license)
 
 Compatibility
@@ -46,7 +43,7 @@ Dependency
 Download
 --------
 
-Binary can be downloaded from [Releases](https://github.com/danielqsj/kafka_exporter/releases) page.
+Binary can be downloaded from [Releases](https://github.com/rfvbkm/kafka_exporter/releases) page.
 
 Compile
 -------
@@ -67,10 +64,10 @@ Docker Hub Image
 ----------------
 
 ```shell
-docker pull danielqsj/kafka-exporter:latest
+docker pull rfvbkm/kafka-exporter:latest
 ```
 
-It can be used directly instead of having to build the image yourself. ([Docker Hub danielqsj/kafka-exporter](https://hub.docker.com/r/danielqsj/kafka-exporter)\)
+It can be used directly instead of having to build the image yourself. ([Docker Hub rfvbkm/kafka-exporter](https://hub.docker.com/r/rfvbkm/kafka-exporter))
 
 Run
 ---
@@ -84,7 +81,7 @@ kafka_exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
 ### Run Docker Image
 
 ```
-docker run -ti --rm -p 9308:9308 danielqsj/kafka-exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
+docker run -ti --rm -p 9308:9308 rfvbkm/kafka-exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
 ```
 
 ### Run Docker Compose
@@ -92,7 +89,7 @@ make a `docker-compose.yml` flie
 ```
 services:
   kafka-exporter:
-    image: danielqsj/kafka-exporter 
+    image: rfvbkm/kafka-exporter
     command: ["--kafka.server=kafka:9092", "[--kafka.server=another-server ...]"]
     ports:
       - 9308:9308     
@@ -333,32 +330,9 @@ For details of the dashboard please see [Kafka Exporter Overview](https://grafan
 Contribute
 ----------
 
-If you like Kafka Exporter, please give me a star. This will help more people know Kafka Exporter.
-
-Please feel free to send me [pull requests](https://github.com/danielqsj/kafka_exporter/pulls).
-
-Contributors ✨
-----------
-
-Thanks goes to these wonderful people:
-
-<a href="https://github.com/danielqsj/kafka_exporter/graphs/contributors">
-<img src="https://contrib.rocks/image?repo=danielqsj/kafka_exporter" />
-</a>
-
-Star ⭐
-----------
-
-[![Stargazers over time](https://starchart.cc/danielqsj/kafka_exporter.svg)](https://starchart.cc/danielqsj/kafka_exporter)
-
-Donation
---------
-
-Your donation will encourage me to continue to improve Kafka Exporter. Support Alipay donation.
-
-![](https://github.com/danielqsj/kafka_exporter/raw/master/alipay.jpg)
+Pull requests are welcome in the [repository](https://github.com/rfvbkm/kafka_exporter/pulls).
 
 License
 -------
 
-Code is licensed under the [Apache License 2.0](https://github.com/danielqsj/kafka_exporter/blob/master/LICENSE).
+Code is licensed under the [Apache License 2.0](LICENSE).
