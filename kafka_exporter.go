@@ -900,7 +900,7 @@ func (e *Exporter) emitGroupMetrics(
 	} else {
 		for _, member := range group.Members {
 			if len(member.MemberAssignment) == 0 {
-				klog.Warningf("MemberAssignment is empty for group member: %v in group: %v", member.MemberId, group.GroupId)
+				klog.V(DEBUG).Infof("MemberAssignment is empty for group member: %v in group: %v", member.MemberId, group.GroupId)
 				continue
 			}
 			assignment, err := member.GetMemberAssignment()
