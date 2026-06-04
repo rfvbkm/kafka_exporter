@@ -1,7 +1,7 @@
-kafka_exporter
+kafka-exporter
 ==============
 
-[![CI](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/rfvbkm/kafka_exporter)](https://goreportcard.com/report/github.com/rfvbkm/kafka_exporter) [![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/rfvbkm/kafka_exporter) [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![CI](https://github.com/rfvbkm/kafka-exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/rfvbkm/kafka-exporter/actions/workflows/ci.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/rfvbkm/kafka-exporter)](https://goreportcard.com/report/github.com/rfvbkm/kafka-exporter) [![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/rfvbkm/kafka-exporter) [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 Kafka exporter for Prometheus. For other metrics from Kafka, have a look at the [JMX exporter](https://github.com/prometheus/jmx_exporter).
 
@@ -43,7 +43,7 @@ Dependency
 Download
 --------
 
-Binary can be downloaded from [Releases](https://github.com/rfvbkm/kafka_exporter/releases) page.
+Binary can be downloaded from [Releases](https://github.com/rfvbkm/kafka-exporter/releases) page.
 
 Compile
 -------
@@ -330,7 +330,7 @@ For details of the dashboard please see [Kafka Exporter Overview](https://grafan
 Contribute
 ----------
 
-Pull requests are welcome in the [repository](https://github.com/rfvbkm/kafka_exporter/pulls).
+Pull requests are welcome in the [repository](https://github.com/rfvbkm/kafka-exporter/pulls).
 
 License
 -------
