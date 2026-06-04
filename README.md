@@ -1,13 +1,24 @@
-kafka_exporter
+kafka-exporter
 ==============
 
-[![CI](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/rfvbkm/kafka_exporter/actions/workflows/ci.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/rfvbkm/kafka_exporter)](https://goreportcard.com/report/github.com/rfvbkm/kafka_exporter) [![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/rfvbkm/kafka_exporter) [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![CI](https://github.com/rfvbkm/kafka-exporter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/rfvbkm/kafka-exporter/actions/workflows/ci.yml) [![Docker Pulls](https://img.shields.io/docker/pulls/rfvbkm/kafka-exporter.svg)](https://hub.docker.com/r/rfvbkm/kafka-exporter) [![Go Report Card](https://goreportcard.com/badge/github.com/rfvbkm/kafka-exporter)](https://goreportcard.com/report/github.com/rfvbkm/kafka-exporter) [![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/rfvbkm/kafka-exporter) [![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 Kafka exporter for Prometheus. For other metrics from Kafka, have a look at the [JMX exporter](https://github.com/prometheus/jmx_exporter).
+
+About
+-----
+
+This project is inspired by and maintained as a fork of [danielqsj/kafka_exporter](https://github.com/danielqsj/kafka_exporter). It keeps the same Prometheus scrape model, flags, and existing metric names. Main differences from upstream:
+
+- **Faster metrics collection** — topic partition offsets are fetched in batches per leader broker; the same offset map is reused when computing consumer group lag; committed offsets are read via each group's coordinator; consumer groups are processed in parallel (`--group.workers`, default `100`). Together these reduce scrape time and Kafka RPC load on large clusters.
+- **New metric** — [`kafka_topic_partition_consumer`](#topics) reports whether a consumer group has an active member on a topic/partition (`1` if assigned, `0` if the group has a committed offset but no active member), with labels `consumergroup`, `consumer_id`, `host`, and `client_id`.
+
+See [CHANGELOG.md](CHANGELOG.md) for release notes. Use this repository for the changes above; use [upstream](https://github.com/danielqsj/kafka_exporter) for the original unmodified exporter.
 
 Table of Contents
 -----------------
 
+- [About](#about)
 - [Compatibility](#compatibility)
 - [Dependency](#dependency)
 - [Download](#download)
@@ -43,7 +54,7 @@ Dependency
 Download
 --------
 
-Binary can be downloaded from [Releases](https://github.com/rfvbkm/kafka_exporter/releases) page.
+Binary can be downloaded from [Releases](https://github.com/rfvbkm/kafka-exporter/releases) page.
 
 Compile
 -------
@@ -146,6 +157,7 @@ This image is configurable using different flags
 | offset.show-all                | true           | Whether show the offset/lag for all consumer group, otherwise, only show connected consumer groups                                             |
 | concurrent.enable              | false          | If true, all scrapes will trigger kafka operations otherwise, they will share results. WARN: This should be disabled on large clusters         |
 | topic.workers                  | 100            | Number of topic workers                                                                                                                        |
+| group.workers                  | 100            | Number of consumer group workers (parallel lag/offset collection)                                                                              |
 | verbosity                      | 0              | Verbosity log level                                                                                                                            |
 
 ### Notes
@@ -330,7 +342,7 @@ For details of the dashboard please see [Kafka Exporter Overview](https://grafan
 Contribute
 ----------
 
-Pull requests are welcome in the [repository](https://github.com/rfvbkm/kafka_exporter/pulls).
+Pull requests are welcome in the [repository](https://github.com/rfvbkm/kafka-exporter/pulls).
 
 License
 -------
