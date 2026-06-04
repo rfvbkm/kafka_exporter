@@ -24,9 +24,8 @@ kafka_exporter
 # Project IDE
 .idea/
 *.iml
+.vscode/
 
 # Test configuration
 test/
 .DS_Store
-
-
