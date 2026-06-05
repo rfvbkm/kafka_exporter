@@ -19,7 +19,7 @@ go.sum
 .glide/
 
 # Binary
-kafka_exporter
+kafka-exporter
 
 # Project IDE
 .idea/
