@@ -15,6 +15,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// defaultKafkaVersion must stay in sync with the broker image used in
+// dev/docker-compose.yml and .github/workflows/ci.yml. Override with KAFKA_VERSION.
+const defaultKafkaVersion = "4.3.0"
+
+func kafkaTestVersion() string {
+	if v := os.Getenv("KAFKA_VERSION"); v != "" {
+		return v
+	}
+	return defaultKafkaVersion
+}
+
 func TestIntegrationSmoke(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
@@ -36,7 +47,7 @@ func TestIntegrationSmoke(t *testing.T) {
 	initMetricDescs(nil)
 	opts := kafkaOpts{
 		uri:                     brokers,
-		kafkaVersion:            "4.3.0",
+		kafkaVersion:            kafkaTestVersion(),
 		metadataRefreshInterval: "30s",
 		groupMetricsTimeout:     "5m",
 	}
@@ -95,7 +106,7 @@ func ensureTestTopic(t *testing.T, brokers []string) {
 	t.Helper()
 
 	cfg := sarama.NewConfig()
-	version, err := sarama.ParseKafkaVersion("4.3.0")
+	version, err := sarama.ParseKafkaVersion(kafkaTestVersion())
 	if err != nil {
 		t.Fatalf("parse kafka version: %v", err)
 	}
