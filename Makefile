@@ -40,7 +40,7 @@ test-integration:
 	else \
 		echo ">> starting Kafka via docker compose"; \
 		docker compose -f $(COMPOSE_FILE) up -d; \
-		$(WAIT_KAFKA) || (echo ">> Kafka did not become ready in time" && exit 1); \
+		$(WAIT_KAFKA) || { echo ">> Kafka did not become ready in time" >&2; exit 1; }; \
 		started_kafka=1; \
 	fi; \
 	echo ">> running integration tests"; \
@@ -58,7 +58,7 @@ ensure-kafka:
 	else \
 		echo ">> starting Kafka via docker compose"; \
 		docker compose -f $(COMPOSE_FILE) up -d; \
-		$(WAIT_KAFKA) || (echo ">> Kafka did not become ready in time" && exit 1); \
+		$(WAIT_KAFKA) || { echo ">> Kafka did not become ready in time" >&2; exit 1; }; \
 	fi
 
 test-all: test test-integration
