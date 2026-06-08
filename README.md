@@ -25,6 +25,7 @@ Table of Contents
 - [Compile](#compile)
   - [Build Binary](#build-binary)
   - [Build Docker Image](#build-docker-image)
+- [Testing](#testing)
 - [Run](#run)
   - [Run Binary](#run-binary)
   - [Run Docker Image](#run-docker-image)
@@ -70,6 +71,52 @@ make
 ```shell
 make docker
 ```
+
+Testing
+-------
+
+The project has fast unit tests (no Kafka required) and integration tests that scrape a real broker.
+
+### Unit tests
+
+```shell
+make test
+```
+
+Runs `go test -short`: certificate helpers, consumer metric filters, OAuth token caching, and other pure logic. Integration tests are skipped via `testing.Short()`.
+
+### Integration tests
+
+```shell
+make test-integration
+```
+
+Runs `TestIntegrationSmoke` against Kafka at `localhost:9092` (override with `KAFKA_BROKERS`, comma-separated). The target:
+
+- starts `apache/kafka:4.3.0` from [`dev/docker-compose.yml`](dev/docker-compose.yml) if no broker is reachable;
+- waits until Kafka responds to metadata requests (`dev/wait-kafka`);
+- checks `/healthz` and `/metrics` (`kafka_brokers`, `kafka_topic_partitions`);
+- runs `docker compose down` when it started the stack itself (already-running Kafka is left untouched).
+
+### All tests
+
+```shell
+make test-all
+```
+
+Runs unit tests first, then integration tests.
+
+### Local Kafka only
+
+To keep a broker running between test runs:
+
+```shell
+make ensure-kafka
+# or
+docker compose -f dev/docker-compose.yml up -d
+```
+
+CI runs `make test` in the lint job and `make test-integration` in a separate job with an `apache/kafka:4.3.0` service container.
 
 Docker Hub Image
 ----------------

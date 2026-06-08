@@ -1,6 +1,6 @@
 GO    := GO111MODULE=on go
 PROMU := $(GOPATH)/bin/promu
-pkgs   = $(shell $(GO) list ./... | grep -v /vendor/)
+pkgs   = $(shell $(GO) list ./... | grep -v /vendor/ | grep -v /dev/)
 UNAME_S := $(shell uname -s | tr A-Z a-z)
 UNAME_M := $(shell uname -m)
 
@@ -14,7 +14,6 @@ PREFIX                  ?= $(shell pwd)
 BIN_DIR                 ?= $(shell pwd)
 DOCKER_IMAGE_NAME       ?= kafka-exporter
 DOCKER_IMAGE_TAG        ?= $(subst /,-,$(shell git rev-parse --abbrev-ref HEAD))
-#TAG 					:= $(shell echo `if [ "$(TRAVIS_BRANCH)" = "master" ] || [ "$(TRAVIS_BRANCH)" = "" ] ; then echo "latest"; else echo $(TRAVIS_BRANCH) ; fi`)
 
 PUSHTAG                 ?= type=registry,push=true
 DOCKER_PLATFORMS        ?= linux/amd64,linux/s390x,linux/arm64,linux/ppc64le
@@ -26,8 +25,43 @@ style:
 	@! gofmt -d $(shell find . -path ./vendor -prune -o -name '*.go' -print) | grep '^'
 
 test:
-	@echo ">> running tests"
-	@$(GO) test -short $(pkgs)
+	@echo ">> running unit tests"
+	@$(GO) test -short -count=1 $(pkgs)
+
+COMPOSE_FILE := dev/docker-compose.yml
+KAFKA_BROKERS ?= localhost:9092
+WAIT_KAFKA := $(GO) run ./dev/wait-kafka
+export KAFKA_BROKERS
+
+test-integration:
+	@started_kafka=0; \
+	if $(WAIT_KAFKA) 2>/dev/null; then \
+		echo ">> Kafka is already available"; \
+	else \
+		echo ">> starting Kafka via docker compose"; \
+		docker compose -f $(COMPOSE_FILE) up -d; \
+		$(WAIT_KAFKA) || { echo ">> Kafka did not become ready in time" >&2; exit 1; }; \
+		started_kafka=1; \
+	fi; \
+	echo ">> running integration tests"; \
+	REQUIRE_KAFKA=1 $(GO) test -count=1 -v -run TestIntegration $(pkgs); \
+	test_exit=$$?; \
+	if [ $$started_kafka -eq 1 ]; then \
+		echo ">> stopping Kafka via docker compose"; \
+		docker compose -f $(COMPOSE_FILE) down; \
+	fi; \
+	exit $$test_exit
+
+ensure-kafka:
+	@if $(WAIT_KAFKA) 2>/dev/null; then \
+		echo ">> Kafka is already available"; \
+	else \
+		echo ">> starting Kafka via docker compose"; \
+		docker compose -f $(COMPOSE_FILE) up -d; \
+		$(WAIT_KAFKA) || { echo ">> Kafka did not become ready in time" >&2; exit 1; }; \
+	fi
+
+test-all: test test-integration
 
 format:
 	@echo ">> formatting code"
@@ -150,4 +184,4 @@ STATICCHECK=$(shell which staticcheck)
 endif
 
 
-.PHONY: all style format build test vet tarball docker promu sec staticcheck
+.PHONY: all style format build test test-integration test-all ensure-kafka vet tarball docker promu sec staticcheck

@@ -1112,30 +1112,7 @@ func main() {
 	setup(*listenAddress, *metricsPath, *topicFilter, *topicExclude, *groupFilter, *groupExclude, *logSarama, opts, labels)
 }
 
-func setup(
-	listenAddress string,
-	metricsPath string,
-	topicFilter string,
-	topicExclude string,
-	groupFilter string,
-	groupExclude string,
-	logSarama bool,
-	opts kafkaOpts,
-	labels map[string]string,
-) {
-	klog.InitFlags(flag.CommandLine)
-	if err := flag.Set("logtostderr", "true"); err != nil {
-		klog.Errorf("Error on setting logtostderr to true: %v", err)
-	}
-	err := flag.Set("v", strconv.Itoa(opts.verbosityLogLevel))
-	if err != nil {
-		klog.Errorf("Error on setting v to %v: %v", strconv.Itoa(opts.verbosityLogLevel), err)
-	}
-	defer klog.Flush()
-
-	klog.V(INFO).Infoln("Starting kafka_exporter", version.Info())
-	klog.V(DEBUG).Infoln("Build context", version.BuildContext())
-
+func initMetricDescs(labels map[string]string) {
 	clusterBrokers = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "brokers"),
 		"Number of Brokers in the Kafka Cluster.",
@@ -1161,78 +1138,93 @@ func setup(
 		"Oldest Offset of a Broker at Topic/Partition",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicPartitionLeader = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_leader"),
 		"Leader Broker ID of this Topic/Partition",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicPartitionReplicas = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_replicas"),
 		"Number of Replicas for this Topic/Partition",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicPartitionInSyncReplicas = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_in_sync_replica"),
 		"Number of In-Sync Replicas for this Topic/Partition",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicPartitionUsesPreferredReplica = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_leader_is_preferred"),
 		"1 if Topic/Partition is using the Preferred Broker",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicUnderReplicatedPartition = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_under_replicated_partition"),
 		"1 if Topic/Partition is under Replicated",
 		[]string{"topic", "partition"}, labels,
 	)
-
 	topicPartitionConsumer = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "topic", "partition_consumer"),
 		"Active consumer on topic partition (1 if assigned, 0 if group consumes but no active member)",
 		[]string{"topic", "partition", "consumergroup", "consumer_id", "host", "client_id"}, labels,
 	)
-
 	consumergroupCurrentOffset = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroup", "current_offset"),
 		"Current Offset of a ConsumerGroup at Topic/Partition",
 		[]string{"consumergroup", "topic", "partition"}, labels,
 	)
-
 	consumergroupCurrentOffsetSum = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroup", "current_offset_sum"),
 		"Current Offset of a ConsumerGroup at Topic for all partitions",
 		[]string{"consumergroup", "topic"}, labels,
 	)
-
 	consumergroupLag = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroup", "lag"),
 		"Current Approximate Lag of a ConsumerGroup at Topic/Partition",
 		[]string{"consumergroup", "topic", "partition"}, labels,
 	)
-
 	consumergroupLagZookeeper = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroupzookeeper", "lag_zookeeper"),
 		"Current Approximate Lag(zookeeper) of a ConsumerGroup at Topic/Partition",
 		[]string{"consumergroup", "topic", "partition"}, nil,
 	)
-
 	consumergroupLagSum = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroup", "lag_sum"),
 		"Current Approximate Lag of a ConsumerGroup at Topic for all partitions",
 		[]string{"consumergroup", "topic"}, labels,
 	)
-
 	consumergroupMembers = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "consumergroup", "members"),
 		"Amount of members in a consumer group",
 		[]string{"consumergroup"}, labels,
 	)
+}
+
+func setup(
+	listenAddress string,
+	metricsPath string,
+	topicFilter string,
+	topicExclude string,
+	groupFilter string,
+	groupExclude string,
+	logSarama bool,
+	opts kafkaOpts,
+	labels map[string]string,
+) {
+	klog.InitFlags(flag.CommandLine)
+	if err := flag.Set("logtostderr", "true"); err != nil {
+		klog.Errorf("Error on setting logtostderr to true: %v", err)
+	}
+	err := flag.Set("v", strconv.Itoa(opts.verbosityLogLevel))
+	if err != nil {
+		klog.Errorf("Error on setting v to %v: %v", strconv.Itoa(opts.verbosityLogLevel), err)
+	}
+	defer klog.Flush()
+
+	klog.V(INFO).Infoln("Starting kafka_exporter", version.Info())
+	klog.V(DEBUG).Infoln("Build context", version.BuildContext())
+
+	initMetricDescs(labels)
 
 	if logSarama {
 		sarama.Logger = log.New(os.Stdout, "[sarama] ", log.LstdFlags)
