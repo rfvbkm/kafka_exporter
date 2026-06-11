@@ -19,6 +19,7 @@ Table of Contents
 -----------------
 
 - [About](#about)
+- [Breaking Changes from Upstream](#breaking-changes-from-upstream)
 - [Compatibility](#compatibility)
 - [Dependency](#dependency)
 - [Download](#download)
@@ -39,6 +40,22 @@ Table of Contents
 - [Grafana Dashboard](#grafana-dashboard)
 - [Contribute](#contribute)
 - [License](#license)
+
+Breaking Changes from Upstream
+------------------------------
+
+Since version 3.0.0 this repository is maintained as a standalone project. If you are migrating from [danielqsj/kafka_exporter](https://github.com/danielqsj/kafka_exporter), note the following incompatibilities:
+
+| What             | Upstream / `v2.0.0`                  | This project (`v3.0.0+`)                      |
+|------------------|---------------------------------------|-----------------------------------------------|
+| Binary name      | `kafka_exporter`                      | `kafka-exporter`                              |
+| Docker image     | `danielqsj/kafka-exporter` / `rfvbkm/kafka-exporter` | [`rfvbkm/kafka-exporter`](https://hub.docker.com/r/rfvbkm/kafka-exporter) |
+| Go module path   | `github.com/danielqsj/kafka_exporter` / `github.com/rfvbkm/kafka_exporter` | `github.com/rfvbkm/kafka-exporter` |
+| Versioning       | upstream releases (`v1.x`)            | independent releases starting from `v2.0.0`   |
+
+The git history was rewritten to remove commits that included the `vendor/` directory and make the repository lighter. Clones and forks created before the rewrite are not compatible with the current repository — re-clone instead of pulling.
+
+Prometheus metric names, labels, and command-line flags remain compatible with upstream; this fork only adds new metrics and flags (see [About](#about)). Update paths in scripts, Dockerfiles, systemd units, and Kubernetes manifests that reference the old binary or image name.
 
 Compatibility
 -------------
@@ -382,9 +399,24 @@ kafka-console-consumer.sh \
 Grafana Dashboard
 -------
 
-Grafana Dashboard ID: 7589, name: Kafka Exporter Overview.
+The [Kafka Exporter Overview](kafka_exporter_overview.json) dashboard covers all metrics exposed by this exporter, including the [`kafka_topic_partition_consumer`](#topics) metric: active consumer assignment per topic/partition and partitions without an active consumer.
 
-For details of the dashboard please see [Kafka Exporter Overview](https://grafana.com/grafana/dashboards/7589-kafka-exporter-overview/).
+Import it manually: Grafana → Dashboards → New → Import → upload [`kafka_exporter_overview.json`](kafka_exporter_overview.json) and select your Prometheus datasource.
+
+A community listing on [grafana.com](https://grafana.com/grafana/dashboards/) will be added once the portal accepts uploads again.
+
+Panels:
+
+- Overview stats: brokers, topics, partitions, consumer groups, partitions without active consumer.
+- Messages produced per second / per minute, messages consumed per minute.
+- Lag by consumer group.
+- Partitions per topic, consumer group members.
+- Partitions without active consumer (per topic and consumer group).
+- Active consumers by topic/partition with `consumergroup`, `consumer_id`, `client_id`, and `host`.
+
+![Kafka Exporter Overview](kafka_exporter_overview.png)
+
+The upstream dashboard [7589](https://grafana.com/grafana/dashboards/7589-kafka-exporter-overview/) also works with this exporter but does not include the new metric panels.
 
 Contribute
 ----------
